@@ -60,12 +60,12 @@ U = cholesky(Hermitian(Wc)).U';
 (K, Σ2, Kt) = svd(U'*Wo*U);
 Σ = diagm(√(Σ2));
 
-T = Σ^0.5 * K' * U^-1;
-S = U * K * Σ^(-0.5);
+T = U * K * Σ^(-0.5);
+S = Σ^0.5 * K' * U^-1;
 
 # Balanced Gramians
-Wc_ = T * Wc * T';
-Wo_ = S' * Wo * S;
+Wc_ = S * Wc * S';
+Wo_ = T' * Wo * T;
 
 # Visualization
 if(size(Wc, 1) == 2)
@@ -78,19 +78,18 @@ HSV_c = cumsum(Σ2)/sum(Σ2)
 bar(HSV_c, l=(1, :white), f=(0, :white))
 
 # Partition the matrices T=[Ψ  Tt] and S=[Φ; St]
-bd = bodeplot(sysCD, linecolor=:white, plotphase=false)
+bd = bodeplot(sys, linecolor=:white, plotphase=false, label="Sys")
 colors = [:orange, :green, :pink, :blue]
-for (i, N_) in enumerate([5 10 20 40])
+for (i, N_) in enumerate([5 10 40])
 	(Ψ, Tt) = (T[:,1:N_], T[:,(N_+1):end]);
 	(Φ, St) = (S[1:N_,:], S[(N_+1):end,:]);
 
 	# Similarity Transformation
-	A_ = T*A*S; B_ = T*B; C_ = C*S; D_ = D;
-	A_ = A_[1:N_, 1:N_]; B_ = B_[1:N_, :]; C_ = C_[:, 1:N_];
+	A_ = Φ*A*Ψ; B_ = Φ*B; C_ = C*Ψ; D_ = D;
 
-	sysb = ss(A_,B_,C_,D_)
+	sys_ = ss(A_,B_,C_,D_)
 
-	bodeplot!(sysb, linecolor=colors[i], plotphase=false)
+	bodeplot!(sys_, linecolor=colors[i], plotphase=false, label="BT$(N_)")
 end
 
 plot(bd, xlim=[1e0, 1e5])
