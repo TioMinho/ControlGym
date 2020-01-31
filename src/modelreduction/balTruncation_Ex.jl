@@ -1,13 +1,14 @@
 # == Libraries ==
-using LinearAlgebra, ControlSystems, Plots
+using LinearAlgebra, ControlSystems, Plots, MAT
 
 # Configurations
 theme(:dark)
-pyplot(leg=false, reuse=false)
+gr(leg=false, reuse=false)
 
 # Aliases
 import Base: √
 √(X::Array{Float64,2}) = Array{Float64,2}(sqrt.(X))
+√(X::Array{Float64,1}) = Array{Float64,1}(sqrt.(X))
 ∑(X) = sum(X)
 
 # == ==
@@ -26,10 +27,8 @@ function plotGramians(T,WW...)
 	# Gramian ellipses
 	CIRC = [x_c y_c];
 	for (i,W) in enumerate(WW)
-		if(i==length(WW))
-			ELLIP = T^-1*√(W)*T*CIRC'
-		else
-			ELLIP = √(W)*CIRC'
+		if(i==length(WW)); 	ELLIP = T^-1*√(W)*T*CIRC'
+		else; 				ELLIP = √(W)*CIRC'
 		end
 
 		plot!(ELLIP[1,:], ELLIP[2,:], l=(1), f=(0, 0.75))
@@ -41,15 +40,14 @@ end
 # == ==
 
 # == Script ==
-close("all")
+vars = matread("data/models/CDplayer.mat")
 
 # 1. Balanced Transformation -----------------
 # Definition of the matrices and system
-A = [-0.75  1.00; 
-	 -0.30 -0.75]
-B = [2; 1]
-C = [1  2]
-D = 0
+A = Array{Float64,2}(vars["A"])
+B = Array{Float64,2}(vars["B"])
+C = Array{Float64,2}(vars["C"])
+D = zeros(size(C,1), size(B,2))
 
 sys = ss(A,B,C,D)
 
@@ -58,15 +56,16 @@ Wc = gram(sys, :c)
 Wo = gram(sys, :o)
 
 # Computing the Balanced Model Transformation matrix
-(Σ2, Tu) = eigen(Wc*Wo)
+U = cholesky(Hermitian(Wc)).U';
+(K, Σ2, Kt) = svd(U'*Wo*U);
+Σ = diagm(√(Σ2));
 
-Σs = (Tu^-1*Wc*(Tu')^-1)^(1/4) * (Tu'*Wo*Tu)^(-1/4)
-T = Tu*Σs; 
-S = T^-1;
+T = Σ^0.5 * K' * U^-1;
+S = U * K * Σ^(-0.5);
 
 # Balanced Gramians
-Wc_ = S * Wc * S';
-Wo_ = T' * Wo * T;
+Wc_ = T * Wc * T';
+Wo_ = S' * Wo * S;
 
 # Visualization
 if(size(Wc, 1) == 2)
@@ -75,21 +74,26 @@ end
 
 # 2. Balanced Truncation ---------------------
 # Permute the columns and visualizes the Hankel Singular Values
-idx = sortperm(Σ2, rev=true); Σ2 = Σ2[idx]; T = T[:,idx]
-
 HSV_c = cumsum(Σ2)/sum(Σ2)
 bar(HSV_c, l=(1, :white), f=(0, :white))
 
 # Partition the matrices T=[Ψ  Tt] and S=[Φ; St]
-N_ = 1
-(Ψ, Tt) = (T[:,1:N_], T[:,(N_+1):end]);
-(Φ, St) = (S[1:N_,:], S[(N_+1):end,:]);
+bd = bodeplot(sysCD, linecolor=:white, plotphase=false)
+colors = [:orange, :green, :pink, :blue]
+for (i, N_) in enumerate([5 10 20 40])
+	(Ψ, Tt) = (T[:,1:N_], T[:,(N_+1):end]);
+	(Φ, St) = (S[1:N_,:], S[(N_+1):end,:]);
 
-# Similarity Transformation
-A_ = Φ*A*Ψ; B_ = Φ*B; C_ = C*Ψ; D_ = D;
+	# Similarity Transformation
+	A_ = T*A*S; B_ = T*B; C_ = C*S; D_ = D;
+	A_ = A_[1:N_, 1:N_]; B_ = B_[1:N_, :]; C_ = C_[:, 1:N_];
 
-sysb = ss(A_,B_,C_,D_)
+	sysb = ss(A_,B_,C_,D_)
 
+	bodeplot!(sysb, linecolor=colors[i], plotphase=false)
+end
+
+plot(bd, xlim=[1e0, 1e5])
 
 # == ==
 
