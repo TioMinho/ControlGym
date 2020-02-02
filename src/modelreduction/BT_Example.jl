@@ -7,8 +7,8 @@ gr(leg=false, reuse=false)
 
 # Aliases
 import Base: √
-√(X::Array{Float64,2}) = Array{Float64,2}(sqrt.(X))
-√(X::Array{Float64,1}) = Array{Float64,1}(sqrt.(X))
+√(X::Array{Float64,2}) = Array{Float64,2}( sqrt.( X .* (abs.(X).>100eps()) ) )
+√(X::Array{Float64,1}) = Array{Float64,1}( sqrt.( X .* (abs.(X).>100eps()) ) )
 ∑(X) = sum(X)
 
 # == ==
@@ -44,9 +44,9 @@ vars = matread("data/models/CDplayer.mat")
 
 # 1. Balanced Transformation -----------------
 # Definition of the matrices and system
-A = Array{Float64,2}(vars["A"])
-B = Array{Float64,2}(vars["B"])
-C = Array{Float64,2}(vars["C"])
+A = Array(vars["A"])
+B = Array(vars["B"])
+C = Array(vars["C"])
 D = zeros(size(C,1), size(B,2))
 
 sys = ss(A,B,C,D)
