@@ -73,9 +73,8 @@ if(size(Wc, 1) == 2)
 end
 
 # 2. Balanced Truncation ---------------------
-# Permute the columns and visualizes the Hankel Singular Values
-HSV_c = cumsum(Σ2)/sum(Σ2)
-bar(HSV_c, l=(1, :white), f=(0, :white))
+# Visualizes the Hankel Singular Values
+bar(cumsum(Σ2)/sum(Σ2), l=(1, :white), f=(0, :white))
 
 # Partition the matrices T=[Ψ  Tt] and S=[Φ; St]
 bd = bodeplot(sys, linecolor=:white, plotphase=false, label="Sys")
