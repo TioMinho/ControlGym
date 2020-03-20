@@ -103,7 +103,7 @@ end
 
 # ===================
 
-# == Variables ==
+# ==== Variables ====
 # Operating point
 xss = yss = 0; θss = π/4; vss = 1; ωss = 0; Δt = 0.1;
 x_ss = [xss; yss; θss]; u_ss = [vss; ωss];
