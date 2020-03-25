@@ -34,8 +34,6 @@ function newtonMethod_KKT(F, c, x0; η=1, ∇F=Nothing, ∇∇F=Nothing, ∇c=No
 	k = 0; n = length(x0); m = length(c(x0));
 	X = x0; λ = randn(m)
 
-	display(m)
-
 	∇∇L(x,λ) = ∇∇F(x) .- (∇∇c(x))'λ
 
 	# === Optimization Loop ===
@@ -103,16 +101,15 @@ xx = [[x1,x2] for (x1,x2) in zip(xx1[:], xx2[:])]
 
 Fx = reshape(F.(xx), size(xx1))
 cx = reshape(c.(xx), size(xx1))
-cx_c = ([map(x->x[i], cx) for i in 1:length(cx[1])])
+FA = ([map(x->x[i], cx) for i in 1:length(cx[1])])
 
 contour(xx1, xx2, Fx,
 		xlim=(min(xx1...), max(xx1...)), 
     	ylim=(min(xx2...), max(xx2...)),
     	size=(16,10).*60, dpi=200, grid=false)
 
-for i in 1:length(cx_c)
-	contourf!(xx1, xx2, cx_c[i], levels=[0 1], c=[RGBA(0,0,0,0.6), RGBA(0,0,0,0)])
-	contour!(xx1, xx2, cx_c[i], levels=0, c=RGBA(0.4,0.4,0.4,1))
+for i in 1:length(FA)
+	contour!(xx1, xx2, FA[i], levels=0, c=RGBA(0.2,0.8,0.2,1))
 end
 
 plot!(X[1,:], X[2,:], l=(1, :blue), m=(:star5, :white, 6, stroke(0)))
