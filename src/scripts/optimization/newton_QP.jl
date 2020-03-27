@@ -13,7 +13,7 @@ meshgrid(X,Y) = (first.(collect(Iterators.product(X, Y))), last.(collect(Iterato
 
 # ==== Functions ====
 function QP_solver(G, H, A_a, B_b, x0, S0; ϵ=1e-6, T=1e3, verbose=false)
-# (X, λ) = QP_SOLVER(G, H, Aa, Bb, X0, S0; ϵ=1e-6, T=1e3) 
+# (X,S,γ,λ) = QP_SOLVER(G, H, Aa, Bb, X0, S0; ϵ=1e-6, T=1e3) 
 #	given a quadratic objective function F: R^n -> R, equality contraints A: R^n -> R^m,
 #	inequality contraints B: R^n -> R^p, initial point x0 ∈ R^n and initial active set S0 ⊆ [1,p], 
 #	solves the optimization problem
