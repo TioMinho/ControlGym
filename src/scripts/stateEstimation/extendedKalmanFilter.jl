@@ -15,7 +15,7 @@ import Base: *
 # ===================
 
 # ==== Functions ====
-# (XE,m,S) = EXTEMDEDKALMANFILTER(Y,U,X0,T) compute the filtering distributions from output (Y) and
+# (XE,m,S) = EXTENDEDKALMANFILTER(Y,U,X0,T) compute the filtering distributions from output (Y) and
 #	input (U) signals over time (T), considering prior distribution XO.
 function extendedKalmanFilter(sys, y, u, t, x0, Q, R)
 	# Auxiliary variables

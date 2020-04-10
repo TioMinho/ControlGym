@@ -8,7 +8,7 @@ import numpy as np
 x = MX.sym('x', 2)
 u = MX.sym('u')
 
-T = 10; N = 20;
+T = 10; N = 25;
 tspan = np.arange(0,N)
 
 F_opt = {}
