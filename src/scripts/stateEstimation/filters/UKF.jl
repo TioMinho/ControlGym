@@ -1,6 +1,5 @@
 # ==== Libraries ====
 using LinearAlgebra, Distributions, StatsBase, Random, PDMats
-using ControlSystems, Plots
 
 import Base: *
 *(v::Any, Σ::PDMats.PDiagMat{Float64,Array{Float64,1}}) = v*(Σ*I(size(Σ,1)))
@@ -23,27 +22,33 @@ function uTransform(X, f, λ; u=Nothing)
 	# Unpack the mean and variance of X
 	(μ, Σ) = [X.μ, I*X.Σ]; n = size(μ,1)
 
-	# Construct the sigma-point sets
+	# Construct the initial set of sigma-points
 	𝓧 = [ [μ]
-		[ [μ+(√(n+λ)*√(Σ))[:,i]] for i in 1:n]...
-		[ [μ-(√(n+λ)*√(Σ))[:,i]] for i in 1:n]...]
+		[ [μ+(√(n+λ)*√Σ)[:,i]] for i in 1:n]...
+		[ [μ-(√(n+λ)*√Σ)[:,i]] for i in 1:n]... ]
 
-	if u==Nothing
-		𝓨 = [f(𝓧⁽ᵏ⁾) for 𝓧⁽ᵏ⁾ in 𝓧]
-	else
-		𝓨 = [f(𝓧⁽ᵏ⁾, u) for 𝓧⁽ᵏ⁾ in 𝓧]
+	# Propagates the sigma-points through the nonlinear transformations
+	if u==Nothing;	𝓨 = [f(𝓧⁽ᵏ⁾) 	  for 𝓧⁽ᵏ⁾ in 𝓧]
+	else			𝓨 = [f(𝓧⁽ᵏ⁾, u) for 𝓧⁽ᵏ⁾ in 𝓧]
 	end
 
+	#
 	return (𝓧,𝓨)
 end
 
-function unscentedKalmanFilter(sys, y, u, t, x₀, Q, R; α=1, κ=1, β=0)
-# (Xₑ,μ,Σ) = UNSCENTEDKALMANFILTER(SYS,Y,U,T,X₀,Q,R;α=1,κ=1)
-#	Computes the filtering distributions from output (Y) and input (U) signals over time (T),
-#	considering prior distribution XO.
+function UKF(sys, y, u, t, x₀, Q, R; α=1, κ=1, β=0)
+# (Xₑ,μ,Σ) = UKF(SYS,Y,U,T,X₀,Q,R;α=1,κ=1,β=0)
+#	Solves a state estimation problem using the Unscented Kalman Filter (UKF).
+#	Consider the stochastic nonlinear discrete-time state-space system
+#			xₖ₊₁ = f(xₖ,uₖ) + vₖ,		vₖ ~ 𝓝(0,Q)
+#			yₖ   = g(xₖ)    + zₖ,		zₖ ~ 𝓝(0,R)
+#	with prior distribution x₀ ~ 𝓝(μ₀,Σ₀).
+#	The UKF approximates the filtering distribution xₖ ~ p(xₖ|y₀,⋯,yₖ) ≈ 𝓝(μₖ,Σₖ) by computing
+#	a set of sigma-points (𝓧ₖ,𝓨ₖ) and then use the unscented transformation method to estimate
+#	the mean and variance of this approximation.
 #
 	# Auxiliary variables
-	(f,g,~,~,Δt,Nₓ,Nᵧ,Nᵤ) = sys
+	(f,g,~,~,~,Δt,Nₓ,Nᵧ,Nᵤ) = sys
 
 	μ = zeros(Nₓ,   length(t))		# List of means 	(μ = [μ₀,⋯,μₜ])
 	Σ = zeros(Nₓ,Nₓ,length(t))		# List of variances (Σ = [Σ₀,⋯,Σₜ])
@@ -59,38 +64,42 @@ function unscentedKalmanFilter(sys, y, u, t, x₀, Q, R; α=1, κ=1, β=0)
 
 	K(Sₖ,Cₖ) = Cₖ*(Sₖ+R)^(-1)		# Optimal Kalman Gain
 
-	# 1. Updating the initial state distribution
+	# == UKF FILTER ==
+	# 1. UPDATES THE INITIAL STATE DISTRIBUTION
 	(𝓧,𝓨) = uTransform(x₀, g, λᵧ)
 	yₖ = m(Wᵧ⁽ᵐ⁾,𝓨); Sₖ = S(Wᵧ⁽ᶜ⁾,𝓨,yₖ); Cₖ = C(Wᵧ⁽ᶜ⁾,𝓧,𝓨,x₀.μ,yₖ)
 
-	μ[:,1]   =   x₀.μ + K(Sₖ,Cₖ)*(y[:,1] - yₖ)
-	Σ[:,:,1] = I*x₀.Σ - K(Sₖ,Cₖ)*(Sₖ+R)*K(Sₖ,Cₖ)'
+	μₖ =   x₀.μ + K(Sₖ,Cₖ)*(y[:,1] - yₖ)
+	Σₖ = I*x₀.Σ - K(Sₖ,Cₖ)*(Sₖ+R)*K(Sₖ,Cₖ)'
 
-	Xₑ = [MvNormal(μ[:,1], Symmetric(Σ[:,:,1]))]
+	# Creates the stack of filtering distributions Xᵤ ~ p(xₖ|y₁,⋯,yₖ)
+	#  and saves the initial mean and covariance.
+	Xₑ = [MvNormal(μₖ, Symmetric(Σₖ))];	μ[:,1] = μₖ; Σ[:,:,1] = Σₖ
 
-	# == FILTERING LOOP ==
 	for k ∈ 1:length(t)-1
-		# 2. Prediction step
-		(~,𝓧) = uTransform(Xₑ[end], f, λₓ, u=u[:,k])
-		μ[:,k+1]   = m(Wₓ⁽ᵐ⁾, 𝓧)
-		Σ[:,:,k+1] = S(Wₓ⁽ᵐ⁾, 𝓧, μ[:,k+1]) + Q
+		# 2. PREDICTION STEP
+		(~,𝓧) = uTransform(Xₑ[k], f, λₓ, u=u[:,k])
 
-		Xₚ = MvNormal(μ[:,k+1], Symmetric(Σ[:,:,k+1]))	# Predictive Distribution
+		μ⁻ₖ = m(Wₓ⁽ᵐ⁾, 𝓧)
+		Σ⁻ₖ = S(Wₓ⁽ᶜ⁾, 𝓧, μ⁻ₖ) + Q
 
-		# 3. Update step
+		Xₚ = MvNormal(μ⁻ₖ, Symmetric(Σ⁻ₖ))	# Predictive Distribution Xₚ ~ p(xₖ|y₁,⋯,yₖ₋₁)
+
+		# 3. UPDATING STEP
 		(~,𝓨) = uTransform(Xₚ, g, λᵧ)
-		yₖ = m(Wᵧ⁽ᵐ⁾,𝓨); Sₖ = S(Wᵧ⁽ᶜ⁾,𝓨,yₖ); Cₖ = C(Wᵧ⁽ᶜ⁾,𝓧,𝓨,x₀.μ,yₖ)
+		yₖ = m(Wᵧ⁽ᵐ⁾,𝓨); Sₖ = S(Wᵧ⁽ᶜ⁾,𝓨,yₖ); Cₖ = C(Wᵧ⁽ᶜ⁾,𝓧,𝓨,μ⁻ₖ,yₖ)
 
-		μ[:,k+1]   = μ[:,k+1]   + K(Sₖ,Cₖ)*(y[:,k+1] - yₖ)
-		Σ[:,:,k+1] = Σ[:,:,k+1] - K(Sₖ,Cₖ)*(Sₖ+R)*K(Sₖ,Cₖ)'
+		μₖ = μ⁻ₖ + K(Sₖ,Cₖ)*(y[:,k+1] - yₖ)
+		Σₖ = Σ⁻ₖ - K(Sₖ,Cₖ)*(Sₖ+R)*K(Sₖ,Cₖ)'
 
-		Xᵤ = MvNormal(μ[:,k+1], Symmetric(Σ[:,:,k+1]))	# Filtering Distribution
+		Xᵤ = MvNormal(μₖ, Symmetric(Σₖ))	# Filtering Distribution Xᵤ ~ p(xₖ|y₁,⋯,yₖ)
 
-		# Saves the filtering distribution Xᵤ ~ p(xₖ|y₁,⋯,yₖ) in the stack
-		Xₑ = [Xₑ; Xᵤ]
+		# Saves the filtering distribution Xᵤ ~ p(xₖ|y₁,⋯,yₖ)
+		#  and saves the current mean and covariance.
+		Xₑ = [Xₑ; Xᵤ]; μ[:,k+1] = μₖ; Σ[:,:,k+1] = Σₖ
 	end
-	# ====
 
+	# ====
 	return (Xₑ, μ, Σ)
 end
 

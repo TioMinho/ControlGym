@@ -1,7 +1,13 @@
+# ==== Libraries ====
+using Plots
+
 # Configurations
 theme(:dark)
 pyplot(leg=false)
 
+# ===================
+
+# ==== Functions ====
 function circle(θ)
 	x = -(θ:0.1:(2π+θ)).+π/2
 	vert = vcat([(0., 0.)], [(xi,yi) for (xi,yi) in zip(sin.(x), cos.(x))])
@@ -27,3 +33,5 @@ function arrowRotation(ω, θ)
 	vert = vcat(vert, vert[end:-1:1])
 	return Shape(vert)
 end
+
+# ===================

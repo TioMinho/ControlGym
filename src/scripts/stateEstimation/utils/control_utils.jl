@@ -1,7 +1,14 @@
+# ==== Libraries ====
+using LinearAlgebra, Distributions, StatsBase, Random, PDMats
+using ControlSystems
+
+# ===================
+
+# ==== Functions ====
 # (Y,T,X) = SIMULATE(SYS,Q,R)
-function simulate(sys, u, t, x₀, Q, R)
+function sim(sys, u, t, x₀, Q, R)
 	# Auxiliary variables
-	(f,g,~,~,Δt,Nₓ,Nᵧ,Nᵤ) = sys
+	(f,g,~,~,~,Δt,Nₓ,Nᵧ,Nᵤ) = sys
 
 	x = zeros(Nₓ, length(t))
 	y = zeros(Nᵧ, length(t))

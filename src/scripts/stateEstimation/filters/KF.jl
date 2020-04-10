@@ -1,6 +1,5 @@
 # ==== Libraries ====
 using LinearAlgebra, Distributions, StatsBase, Random, PDMats
-using ControlSystems, Plots
 
 import Base: *
 *(v::Any, Σ::PDMats.PDiagMat{Float64,Array{Float64,1}}) = v*(Σ*I(size(Σ,1)))
@@ -11,38 +10,59 @@ import Base: *
 # ===================
 
 # ==== Functions ====
-# (XE,m,S) = KALMANFILTER(Y,U,X0,T) compute the filtering distributions from output (Y) and
-#	input (U) signals over time (T), considering prior distribution XO.
-function kalmanFilter(sys, y, u, t, x0, Q, R)
+function KF(sys, y, u, t, x₀, Q, R)
+# (Xₑ,μ,Σ) = KF(SYS,Y,U,T,X₀,Q,R)
+#	Solves a state estimation problem using the Kalman Filter (KF).
+#	Consider the stochastic linear discrete-time state-space system
+#			xₖ₊₁ = Axₖ + Buₖ + vₖ,		vₖ ~ 𝓝(0,Q)
+#			yₖ   = Cxₖ       + zₖ,		zₖ ~ 𝓝(0,R)
+#	with prior distribution x₀ ~ 𝓝(μ₀,Σ₀).
+#	The KF exactly solves the filtering distribution xₖ ~ p(xₖ|y₀,⋯,yₖ) = 𝓝(μₖ,Σₖ)
+#	using a Bayesian approach:
+#		1) Compute the predictive distribution
+#			Xₚ ~ p(xₖ|y₁,⋯,yₖ₋₁) = 𝓝(μ⁻ₖ,Σ⁻ₖ) = 𝓝(Axₖ₋₁+Buₖ₋₁, A*Σₖ₋₁*Aᵀ + Q)
+#		2) Use Bayes' rule to compute the filtering distribution
+#			Xₚ ~ p(xₖ|y₁,⋯,yₖ)   = 𝓝(μₖ,Σₖ)   = 𝓝(μ⁻ₖ+Kₖ(yₖ-Cμ⁻ₖ), Σ⁻ₖ+Kₖ(CΣ⁻ₖCᵀ+R)Kₖᵀ)
+#		   with Kₖ = Σ⁻ₖ Cᵀ(CᵀΣ⁻ₖCᵀ+R)⁻¹, the optimal Kalman estimator.
+#
 	# Auxiliary variables
-	(A,B,C) = (sys.A, sys.B, sys.C)
-	m = zeros(size(A,1), length(t))
-	S = zeros(size(A)..., length(t))
+	(~,~,A,B,C,Δt,Nₓ,Nᵧ,Nᵤ) = sys
 
-	K(Sk_) = Sk_ * C'*(C*Sk_*C' + R)^(-1)	# Optimal Kalman Gain
+	μ = zeros(Nₓ,     length(t))
+	Σ = zeros(Nₓ, Nₓ, length(t))
 
-	# Updating the initial state distribution
-	m[:,1]   =   x0.μ + K(x0.Σ)*(y[:,1] - C*x0.μ)
-	S[:,:,1] = I*x0.Σ - K(x0.Σ)*C*x0.Σ
+	# Auxiliary functions
+	K(S⁻ₖ) = S⁻ₖ * C'*(C*S⁻ₖ*C' + R)^(-1)	# Optimal Kalman Gain
 
-	p_x = [MvNormal(m[:,1], Symmetric(S[:,:,1]))]
+	# == EKF FILTER ==
+	# 1. UPDATING THE INITIAL STATE DISTRIBUTION
+	μₖ =   x₀.μ + K(x₀.Σ)*(y[:,1] - C*x₀.μ)
+	Σₖ = I*x₀.Σ - K(x₀.Σ)*(C*x₀.Σ*C'+R)*K(x₀.Σ)'
 
-	# == FILTERING LOOP ==
+	# Creates the stack of filtering distributions Xᵤ ~ p(xₖ|y₁,⋯,yₖ)
+	#  and saves the initial mean and covariance.
+	Xₑ = [MvNormal(μₖ, Symmetric(Σₖ))];	μ[:,1] = μₖ; Σ[:,:,1] = Σₖ
+
 	for k ∈ 1:length(t)-1
-		# Prediction step
-		m[:,k+1]   = A*p_x[k].μ + B*u[:,k]
-		S[:,:,k+1] = A*S[:,:,k]*A' + Q
+		# 2. PREDICTION STEP
+		μ⁻ₖ = A*μₖ + B*u[:,k]
+		Σ⁻ₖ = A*Σₖ*A' + Q
 
-		# Update step
-		m[:,k+1]   = m[:,k+1]   + K(S[:,:,k+1])*(y[:,k+1] - C*m[:,k+1])
-		S[:,:,k+1] = S[:,:,k+1] - K(S[:,:,k+1])*C*S[:,:,k+1]
+		Xₚ = MvNormal(μ⁻ₖ, Symmetric(Σ⁻ₖ))	# Predictive Distribution Xₚ ~ p(xₖ|y₁,⋯,yₖ₋₁)
 
-		# Saves the filtering distribution x ~ p(x_k | y_1, ..., y_k)
-		p_x = [p_x; MvNormal(m[:,k+1], Symmetric(S[:,:,k+1]))]
+		# 3. UPDATING STEP
+		μₖ = μ⁻ₖ + K(Σ⁻ₖ)*(y[:,k+1] - C*μ⁻ₖ)
+		Σₖ = Σ⁻ₖ - K(Σ⁻ₖ)*(C*Σ⁻ₖ*C'+R)*K(Σ⁻ₖ)'
+
+		Xᵤ = MvNormal(μₖ, Symmetric(Σₖ))	# Filtering Distribution Xᵤ ~ p(xₖ|y₁,⋯,yₖ)
+
+		# Saves the filtering distribution Xᵤ ~ p(xₖ|y₁,⋯,yₖ)
+		#  and saves the current mean and covariance.
+		Xₑ = [Xₑ; Xᵤ]; μ[:,k+1] = μₖ; Σ[:,:,k+1] = Σₖ
 	end
 	# ====
 
-	return (p_x, m, S)
+	return (Xₑ, μ, Σ)
 end
 
 # ===================
