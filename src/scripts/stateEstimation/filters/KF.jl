@@ -27,6 +27,7 @@ function KF(sys, y, u, t, x₀, Q, R)
 #
 	# Auxiliary variables
 	(~,~,A,B,C,Δt,Nₓ,Nᵧ,Nᵤ) = sys
+	t = t[1]:Δt:t[end]
 
 	μ = zeros(Nₓ,     length(t))
 	Σ = zeros(Nₓ, Nₓ, length(t))
@@ -34,7 +35,7 @@ function KF(sys, y, u, t, x₀, Q, R)
 	# Auxiliary functions
 	K(S⁻ₖ) = S⁻ₖ * C'*(C*S⁻ₖ*C' + R)^(-1)	# Optimal Kalman Gain
 
-	# == EKF FILTER ==
+	# == KALMAN FILTER ==
 	# 1. UPDATING THE INITIAL STATE DISTRIBUTION
 	μₖ =   x₀.μ + K(x₀.Σ)*(y[:,1] - C*x₀.μ)
 	Σₖ = I*x₀.Σ - K(x₀.Σ)*(C*x₀.Σ*C'+R)*K(x₀.Σ)'

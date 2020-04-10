@@ -10,6 +10,7 @@ import Base: *
 # ===================
 
 # ==== Functions ====
+function EKF(sys, y, u, t, x₀, Q, R)
 # (Xₑ,μ,Σ) = EKF(SYS,Y,U,T,X₀,Q,R)
 #	Solves a state estimation problem using the Extended Kalman Filter (EKF).
 #	Consider the stochastic nonlinear discrete-time state-space system
@@ -28,9 +29,9 @@ import Base: *
 #			Xₚ ~ p(xₖ|y₁,⋯,yₖ)   ≈ 𝓝(μₖ,Σₖ)   = 𝓝(μ⁻ₖ+Kₖ(yₖ-Cₖμ⁻ₖ), Σ⁻ₖ+Kₖ(CₖΣ⁻ₖCₖᵀ+R)Kₖᵀ)
 #		   with Kₖ = Σ⁻ₖ Cₖᵀ(CₖᵀΣ⁻ₖCₖᵀ+R)⁻¹, the optimal Kalman estimator.
 #
-function EKF(sys, y, u, t, x₀, Q, R)
 	# Auxiliary variables
 	(f,g,A,~,C,Δt,Nₓ,Nᵧ,Nᵤ) = sys
+	t = t[1]:Δt:t[end]
 
 	μ = zeros(Nₓ,   length(t))		# List of means 	(μ = [μ₀,⋯,μₜ])
 	Σ = zeros(Nₓ,Nₓ,length(t))		# List of variances (Σ = [Σ₀,⋯,Σₜ])

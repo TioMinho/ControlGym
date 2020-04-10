@@ -18,6 +18,8 @@ f(x,u) = x + [cos(x[3])Δt * u[1]
 g(x) = x
 
 # Linearized System (Jacobians)
+xₛₛ = [0; 0; π/4]; uₛₛ = [1; 0];
+
 A(xₛₛ,uₛₛ) = [1  0  -(uₛₛ[1]*Δt)sin(xₛₛ[3]);
 	 		  0  1   (uₛₛ[1]*Δt)cos(xₛₛ[3]);
 	 		  0  0         1        ]
@@ -26,8 +28,11 @@ B(xₛₛ,uₛₛ) = [(Δt)cos(xₛₛ[3])  0 ;
 		  		   0       	  Δt ]
 C(xₛₛ) = I(Nₓ)
 
-sys = (f,g,A,B,C,Δt,Nₓ,Nᵧ,Nᵤ)
+Aₛₛ = A(xₛₛ,uₛₛ); Bₛₛ = B(xₛₛ,uₛₛ); Cₛₛ = C(xₛₛ)
+sys  = (f,g,A,B,C,Δt,Nₓ,Nᵧ,Nᵤ)
+sysL = (f,g,Aₛₛ,Bₛₛ,Cₛₛ,Δt,Nₓ,Nᵧ,Nᵤ)
 
+# ==== Simulation Parameters ====
 # Input signal
 t = 0:Δt:20;
 u = [2 .+ 0t  -(0.5π)sin.(0.5t)+(π)sin.(t)]';
@@ -43,36 +48,8 @@ X₀ = MvNormal(x₀, 0.001I(3))
 
 # ==== Script ====
 # Simulates the System
-(y, t, x)    = sim(sys,    u, t, x₀, Q, R)
+(y, t, x)    = sim(sys,    u, t, x₀, Q=Q, R=R, mode="nonlinear")
 (Xₑ, μₑ, Σₑ) = UKF(sys, y, u, t, X₀, Q, R)
 
-tᵢ = length(t)
-scatter(y[1,1:tᵢ], y[2,1:tᵢ], m=(:star5, 2, stroke(0)), markeralpha=range(0,0.7,length=tᵢ+1),
-		   xlim=(min(y[1,:]...)-2, max(y[1,:]...)+2),
-		   ylim=(min(y[2,:]...)-2, max(y[2,:]...)+2),
-		   ticks=nothing, size=(16,9).*30, dpi=300)
-
-if(tᵢ>1)
-	plot!(μₑ[1, 1:(tᵢ-1)], μₑ[2, 1:(tᵢ-1)], alpha=range(0,0.7,length=tᵢ+1))
-end
-
-scatter!([μₑ[1,tᵢ]], [μₑ[2,tᵢ]], alpha=0.25, marker=(arrow(u[1,tᵢ], μₑ[3,tᵢ]), 20*u[1,tᵢ], stroke(1, 0.1, :white)))
-scatter!([μₑ[1,tᵢ]], [μₑ[2,tᵢ]], alpha=0.80, marker=(circle(μₑ[3,tᵢ]), 15, :white))
-scatter!([μₑ[1,tᵢ]], [μₑ[2,tᵢ]], alpha=0.25, marker=(arrowRotation(u[2,tᵢ], μₑ[3,tᵢ]), 25, stroke(1, 0.1, :white)))
-
-# anim = @animate for tᵢ ∈ 1:length(t)
-# 	scatter(y[1,1:tᵢ], y[2,1:tᵢ], m=(:star5, 2, stroke(0)), markeralpha=range(0,0.7,length=tᵢ+1),
-#                xlim=(min(y[1,:]...)-2, max(y[1,:]...)+2),
-#                ylim=(min(y[2,:]...)-2, max(y[2,:]...)+2),
-#                ticks=nothing, size=(16,9).*30, dpi=400)
-#
-# 	if(tᵢ>1)
-# 		plot!(μₑ[1, 1:(tᵢ-1)], μₑ[2, 1:(tᵢ-1)], alpha=range(0,0.7,length=tᵢ+1))
-# 	end
-#
-# 	scatter!([μₑ[1,tᵢ]], [μₑ[2,tᵢ]], alpha=0.25, marker=(arrow(u[1,tᵢ], μₑ[3,tᵢ]), 20*u[1,tᵢ], stroke(1, 0.1, :white)))
-# 	scatter!([μₑ[1,tᵢ]], [μₑ[2,tᵢ]], alpha=0.80, marker=(circle(μₑ[3,tᵢ]), 15, :white))
-# 	scatter!([μₑ[1,tᵢ]], [μₑ[2,tᵢ]], alpha=0.25, marker=(arrowRotation(u[2,tᵢ], μₑ[3,tᵢ]), 25, stroke(1, 0.1, :white)))
-# 	savefig("res/tmp/tmp_ekf$(ti).png")
-# end
-# gif(anim, "res/ekf_car.gif", fps=10)
+# Plot the results
+plot_trajectory(t, x, y, u, xₑ=μₑ, anim=false, name="car")

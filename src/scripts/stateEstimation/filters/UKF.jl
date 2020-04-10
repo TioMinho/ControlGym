@@ -10,32 +10,6 @@ import Base: *
 # ===================
 
 # ==== Functions ====
-function uTransform(X, f, λ; u=Nothing)
-# (𝓧,𝓨) = UTRANSFORM(X,f,λ; u=Nothing)
-# 	Given a distribution X ~ 𝓝(μ,Σ) and a nonlinear function f:ℝⁿ×ℝᵖ → ℝᵐ computes the
-#	set of sigma-points
-#		𝓧 : {𝓧⁽⁰⁾, ..., 𝓧⁽²ⁿ⁺¹⁾} and
-#		𝓧⁽⁰⁾ = μ, 𝓧⁽ᵏ⁾ = μ + √(n+λ)[√Σ]ₖ, 𝓧⁽ⁿ⁺ᵏ⁾ = μ - √(n+λ)[√Σ]ₖ	(k=1,⋯,n)
-#	and applies the nonlinear function to obtain the transformed set
-#		𝓨 : {f(𝓧⁽ᵏ⁾,uₖ)}		(k=1,⋯,n)
-#
-	# Unpack the mean and variance of X
-	(μ, Σ) = [X.μ, I*X.Σ]; n = size(μ,1)
-
-	# Construct the initial set of sigma-points
-	𝓧 = [ [μ]
-		[ [μ+(√(n+λ)*√Σ)[:,i]] for i in 1:n]...
-		[ [μ-(√(n+λ)*√Σ)[:,i]] for i in 1:n]... ]
-
-	# Propagates the sigma-points through the nonlinear transformations
-	if u==Nothing;	𝓨 = [f(𝓧⁽ᵏ⁾) 	  for 𝓧⁽ᵏ⁾ in 𝓧]
-	else			𝓨 = [f(𝓧⁽ᵏ⁾, u) for 𝓧⁽ᵏ⁾ in 𝓧]
-	end
-
-	#
-	return (𝓧,𝓨)
-end
-
 function UKF(sys, y, u, t, x₀, Q, R; α=1, κ=1, β=0)
 # (Xₑ,μ,Σ) = UKF(SYS,Y,U,T,X₀,Q,R;α=1,κ=1,β=0)
 #	Solves a state estimation problem using the Unscented Kalman Filter (UKF).
@@ -49,6 +23,7 @@ function UKF(sys, y, u, t, x₀, Q, R; α=1, κ=1, β=0)
 #
 	# Auxiliary variables
 	(f,g,~,~,~,Δt,Nₓ,Nᵧ,Nᵤ) = sys
+	t = t[1]:Δt:t[end]
 
 	μ = zeros(Nₓ,   length(t))		# List of means 	(μ = [μ₀,⋯,μₜ])
 	Σ = zeros(Nₓ,Nₓ,length(t))		# List of variances (Σ = [Σ₀,⋯,Σₜ])
@@ -101,6 +76,32 @@ function UKF(sys, y, u, t, x₀, Q, R; α=1, κ=1, β=0)
 
 	# ====
 	return (Xₑ, μ, Σ)
+end
+
+function uTransform(X, f, λ; u=nothing)
+# (𝓧,𝓨) = UTRANSFORM(X,f,λ; u=nothing)
+# 	Given a distribution X ~ 𝓝(μ,Σ) and a nonlinear function f:ℝⁿ×ℝᵖ → ℝᵐ computes the
+#	set of sigma-points
+#		𝓧 : {𝓧⁽⁰⁾, ..., 𝓧⁽²ⁿ⁺¹⁾} and
+#		𝓧⁽⁰⁾ = μ, 𝓧⁽ᵏ⁾ = μ + √(n+λ)[√Σ]ₖ, 𝓧⁽ⁿ⁺ᵏ⁾ = μ - √(n+λ)[√Σ]ₖ	(k=1,⋯,n)
+#	and applies the nonlinear function to obtain the transformed set
+#		𝓨 : {f(𝓧⁽ᵏ⁾,uₖ)}		(k=1,⋯,n)
+#
+	# Unpack the mean and variance of X
+	(μ, Σ) = [X.μ, I*X.Σ]; n = size(μ,1)
+
+	# Construct the initial set of sigma-points
+	𝓧 = [ [μ]
+		[ [μ+(√(n+λ)*√Σ)[:,i]] for i in 1:n]...
+		[ [μ-(√(n+λ)*√Σ)[:,i]] for i in 1:n]... ]
+
+	# Propagates the sigma-points through the nonlinear transformations
+	if u==nothing;	𝓨 = [f(𝓧⁽ᵏ⁾) 	  for 𝓧⁽ᵏ⁾ in 𝓧]
+	else			𝓨 = [f(𝓧⁽ᵏ⁾, u) for 𝓧⁽ᵏ⁾ in 𝓧]
+	end
+
+	#
+	return (𝓧,𝓨)
 end
 
 # ===================
