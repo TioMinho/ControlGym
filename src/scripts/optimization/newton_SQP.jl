@@ -12,37 +12,39 @@ meshgrid(X,Y) = (first.(collect(Iterators.product(X, Y))), last.(collect(Iterato
 # ===================
 
 # ==== Functions ====
+"""	(X,λ) = SQP_SOLVER(∇∇L, ∇F, A, x0; S0=Nothing, ϵ=1e-6, T=1e3, verbose=false)
+
+Given a nonlinear objective function F: R^n -> R, nonlinear contraints C: R^n -> R^m,
+and initial point x0 ∈ R^n, solves the optimization problem
+			min_(x)	F(x)
+			s.t.	C(x) = 0
+by using a Sequential Quadratic Programming approach.
+The current solution is optimized by minimizing a QP subproblem by considering a
+quadratic approximation of the Lagrangian function and a linear approximation of
+the contraints. The equivalent optimization is:
+			min_(p)	L(p) ≈ (∇F_k)'p + 1/2 p'(∇²_x L_k)p
+			s.t.	A_k p + c_k = 0
+Each step updates the solution as
+	| x_(k+1) | = | x_k + p |	(x_0 = x0).
+	| λ_(k+1) |	  |	λ_(k+1) |
+with p ∈ R^n and λ_(k+1) ∈ R^m, being the solutions of the equivalent
+Karush-Kuhn-Tucker (KKT) system:
+	| ∇²_x L_k   -A_k' | |   p     | = - | ∇F_k |  .
+	|    A_k       0   | | λ_(k+1) |     |  c_k |
+
+The outputs are X = [x_0, ..., x_T], and multipliers λ = [λ_0, ..., λ_T].
+"""
 function SQP_solver(∇∇L, ∇F, A, x0; S0=Nothing, ϵ=1e-6, T=1e3, verbose=false)
-# (X,λ) = SQP_SOLVER(∇∇L, ∇F, A, x0; S0=Nothing, ϵ=1e-6, T=1e3, verbose=false) 
-#	given a nonlinear objective function F: R^n -> R, nonlinear contraints C: R^n -> R^m, 
-#	and initial point x0 ∈ R^n, solves the optimization problem
-#				min_(x)	F(x) 
-#				s.t.	C(x) = 0
-#	by using a Sequential Quadratic Programming approach.
-#	The current solution is optimized by minimizing a QP subproblem by considering a 
-#	quadratic approximation of the Lagrangian function and a linear approximation of
-#	the contraints. The equivalent optimization is:
-#				min_(p)	L(p) ≈ (∇F_k)'p + 1/2 p'(∇²_x L_k)p
-#				s.t.	A_k p + c_k = 0
-#	Each step updates the solution as
-#		| x_(k+1) | = | x_k + p |	(x_0 = x0).
-#		| λ_(k+1) |	  |	λ_(k+1) |
-#	with p ∈ R^n and λ_(k+1) ∈ R^m, being the solutions of the equivalent
-#	Karush-Kuhn-Tucker (KKT) system:
-#		| ∇²_x L_k   -A_k' | |   p     | = - | ∇F_k |  .
-#		|    A_k       0   | | λ_(k+1) |     |  c_k |
-#
-#	The outputs are X = [x_0, ..., x_T], and multipliers λ = [λ_0, ..., λ_T]. 
 	return Nothing
-end	
+end
 
 # ===================
 
 # ==== Variables ====
 F(x)  	= x[1]^2 + x[2]^2 + log(x[1]*x[2])
-∇F(x)	= [ 2x[1]+x[1]^-1 
+∇F(x)	= [ 2x[1]+x[1]^-1
 			2x[2]+x[2]^-1]
-∇∇F(x)	= [ 2-x[1]^-2  	 0	   
+∇∇F(x)	= [ 2-x[1]^-2  	 0
 			  0		  2-x[2]^-2]
 
 c(x)  = x[1]*x[2]
@@ -57,8 +59,6 @@ x0 = [0.5; 2]
 # ===================
 
 # ==== Script ====
-# (X,S,γ,λ) = QP_solver(∇F, ∇∇F, [A a], [B b], x0, [2], verbose=true)
-
 # 2. Plot the optimization steps
 # Generates the error surface
 (xx1, xx2) = meshgrid(0.01:0.01:2.5, 0.01:0.01:2.5)
@@ -71,7 +71,7 @@ else; F0 = []
 end
 
 p = contour(xx1, xx2, Fx,
-		xlim=(min(xx1...), max(xx1...)), 
+		xlim=(min(xx1...), max(xx1...)),
     	ylim=(min(xx2...), max(xx2...)),
     	size=(16,10).*50, dpi=200, grid=false)
 
@@ -89,10 +89,10 @@ display(p)
 
 # anim = @animate for ti ∈ 1:size(X,2)
 # 	contour(xx1, xx2, Fx,
-# 			xlim=(min(xx1...), max(xx1...)), 
+# 			xlim=(min(xx1...), max(xx1...)),
 #         	ylim=(min(xx2...), max(xx2...)),
 #         	size=(16,10).*30, dpi=200, grid=false)
-	
+
 # 	contourf!(xx1, xx2, cx, RGBA(1,0,0,0.3))
 
 # 	plot!(X[1,1:ti], X[2,1:ti], l=(1, :blue), m=(:star5, :white, 6, stroke(0)))

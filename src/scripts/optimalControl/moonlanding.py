@@ -7,12 +7,12 @@ from casadi import *
 
 # ==== Functions ====
 def f(x,u):
-    ''' dx = f(x,u)
+    """ dx = f(x,u)
         The nonlinear state-equation for the moon landing state-space model.
         Arguments
             x: the current state x(t) = [Pₓ(t), Pᵧ(t), Vₓ(t), Vᵧ(t), m(t)] of the system (x.shape = [n,1])
             u: the current applied control u(t) = [Fₜ(t), θ(t)] action (u.shape = [p,1])
-    '''
+    """
     # Compute state-space dimensions
     nx = x.shape[0]; nu = u.shape[0];
 

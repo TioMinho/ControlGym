@@ -12,16 +12,18 @@ meshgrid(X,Y) = (first.(collect(Iterators.product(X, Y))), last.(collect(Iterato
 # ===================
 
 # ==== Functions ====
-# X = newtonMethod(F, X0, η=1, ∇F=Nothing, ∇∇F=Nothing, ϵ=1e-6, T=1e3) 
-#	given an objective function F: R^n -> R and initial point x0 ∈ R^n,
-#	solves the optimization problem
-#				min_(x) F(x)
-#	by computing the recursive updates
-#		x_(k+1) = x_k + η (-∇²F(x_k))⁻¹ ∇F(x_k)	(x_0 = x0).
-#	The optimization stops when |x_(k+1) - x_k| < ϵ or when k > T.
-#
-#	The output X = [x_0, ..., x_T] consists in the series of updates.
-function newtonMethod(F, x0; η=1, ∇F=Nothing, ∇∇F=Nothing, ϵ=1e-6, T=1e3, verbose=false) 
+"""	X = newtonMethod(F, X0, η=1, ∇F=Nothing, ∇∇F=Nothing, ϵ=1e-6, T=1e3)
+
+	Given an objective function F: R^n -> R and initial point x0 ∈ R^n,
+	solves the optimization problem
+				min_(x) F(x)
+	by computing the recursive updates
+		x_(k+1) = x_k + η (-∇²F(x_k))⁻¹ ∇F(x_k)	(x_0 = x0).
+	The optimization stops when |x_(k+1) - x_k| < ϵ or when k > T.
+
+	The output X = [x_0, ..., x_T] consists in the series of updates.
+"""
+function newtonMethod(F, x0; η=1, ∇F=Nothing, ∇∇F=Nothing, ϵ=1e-6, T=1e3, verbose=false)
 	# Declare auxiliary variables for the optimization
 	k = 0;
 	X = x0;
@@ -78,10 +80,10 @@ Fx = reshape(F.(xx), size(xx1))
 
 anim = @animate for ti ∈ 1:size(X,2)
 	contour(xx1, xx2, Fx,
-			xlim=(min(xx1...), max(xx1...)), 
+			xlim=(min(xx1...), max(xx1...)),
         	ylim=(min(xx2...), max(xx2...)),
         	size=(16,10).*30, dpi=200, grid=false)
-	
+
 	plot!(X[1,1:ti], X[2,1:ti], l=(1, :blue), m=(:star5, :white, 6, stroke(0)))
 	savefig("res/tmp/tmp_newton_$(ti).png")
 end

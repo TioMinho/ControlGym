@@ -12,23 +12,25 @@ meshgrid(X,Y) = (first.(collect(Iterators.product(X, Y))), last.(collect(Iterato
 # ===================
 
 # ==== Functions ====
-# (X, λ) = newtonMethod_KKT(F, C, X0, η=1, ∇F=Nothing, ∇∇F=Nothing, ∇C=Nothing, ∇∇C=Nothing, ϵ=1e-6, T=1e3) 
-#	given an objective function F: R^n -> R, equality contraints C: R^n -> R^m (m < n) 
-#	and initial point x0 ∈ R^n, solves the optimization problem
-#				min_(x)    F(x)
-#				s.t.	C(x) = 0
-#	by optimizing the Lagrangian L: R^(n+m) -> R
-#		L(x,λ) = F(x) - λ'C(x) = F(x) - Σ(λ_i C_i(x)) .
-#	The Lagragian is optimized by computing the recursive updates
-#		| x_(k+1) | = | x_k + η p |	    (x_0 = x0).
-#		| λ_(k+1) |	  |  λ_(k+1)  | 
-#	with p ∈ R^n and λ_(k+1) ∈ R^m being the solutions of the Karush-Kuhn-Tucker (KKT) system
-#		| ∇²_x L  ∇C' | |   -p    | = | ∇F |  .
-#		|   ∇C     0  | | λ_(k+1) |   | C  |
-#
-#	The optimization stops when |x_(k+1) - x_k| < ϵ or when k > T.
-#
-#	The outputs X = [x_0, ..., x_T] and λ = [λ_0, ..., λ_T] consists in the series of updates.
+"""	(X, λ) = newtonMethod_KKT(F, C, X0, η=1, ∇F=Nothing, ∇∇F=Nothing, ∇C=Nothing, ∇∇C=Nothing, ϵ=1e-6, T=1e3)
+
+Given an objective function F: R^n -> R, equality contraints C: R^n -> R^m (m < n)
+and initial point x0 ∈ R^n, solves the optimization problem
+			min_(x)    F(x)
+			s.t.	C(x) = 0
+by optimizing the Lagrangian L: R^(n+m) -> R
+	L(x,λ) = F(x) - λ'C(x) = F(x) - Σ(λ_i C_i(x)) .
+The Lagragian is optimized by computing the recursive updates
+	| x_(k+1) | = | x_k + η p |	    (x_0 = x0).
+	| λ_(k+1) |	  |  λ_(k+1)  |
+with p ∈ R^n and λ_(k+1) ∈ R^m being the solutions of the Karush-Kuhn-Tucker (KKT) system
+	| ∇²_x L  ∇C' | |   -p    | = | ∇F |  .
+	|   ∇C     0  | | λ_(k+1) |   | C  |
+
+The optimization stops when |x_(k+1) - x_k| < ϵ or when k > T.
+
+The outputs X = [x_0, ..., x_T] and λ = [λ_0, ..., λ_T] consists in the series of updates.
+"""
 function newtonMethod_KKT(F, c, x0; η=1, ∇F=Nothing, ∇∇F=Nothing, ∇c=Nothing, ∇∇c=Nothing, ϵ=1e-6, T=1e3, verbose=false)
 	# Declare auxiliary variables for the optimization
 	k = 0; n = length(x0); m = length(c(x0));
@@ -81,9 +83,9 @@ end
 
 # ==== Variables ====
 F(x)  	= x[1]^2 + x[2]^2 + log(x[1]*x[2])
-∇F(x)	= [ 2x[1]+x[1]^-1 
+∇F(x)	= [ 2x[1]+x[1]^-1
 			2x[2]+x[2]^-1]
-∇∇F(x)	= [ 2-x[1]^-2  	 0	   
+∇∇F(x)	= [ 2-x[1]^-2  	 0
 			  0		  2-x[2]^-2]
 
 c(x)  = x[1]*x[2]-1
@@ -109,7 +111,7 @@ cx = reshape(c.(xx), size(xx1))
 FA = ([map(x->x[i], cx) for i in 1:length(cx[1])])
 
 p = contour(xx1, xx2, Fx,
-		xlim=(min(xx1...), max(xx1...)), 
+		xlim=(min(xx1...), max(xx1...)),
     	ylim=(min(xx2...), max(xx2...)),
     	size=(16,10).*60, dpi=200, grid=false)
 
@@ -123,10 +125,10 @@ plot!(X[1,:], X[2,:], l=(1, :blue), m=(:star5, :white, 6, stroke(0)))
 
 # anim = @animate for ti ∈ 1:size(X,2)
 # 	contour(xx1, xx2, Fx,
-# 			xlim=(min(xx1...), max(xx1...)), 
+# 			xlim=(min(xx1...), max(xx1...)),
 #         	ylim=(min(xx2...), max(xx2...)),
 #         	size=(16,10).*30, dpi=200, grid=false)
-	
+
 # 	contourf!(xx1, xx2, cx, RGBA(1,0,0,0.3))
 
 # 	plot!(X[1,1:ti], X[2,1:ti], l=(1, :blue), m=(:star5, :white, 6, stroke(0)))

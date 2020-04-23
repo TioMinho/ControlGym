@@ -12,28 +12,29 @@ meshgrid(X,Y) = (first.(collect(Iterators.product(X, Y))), last.(collect(Iterato
 # ===================
 
 # ==== Functions ====
+"""	(X,S,γ,λ) = QP_SOLVER(G, H, Aa, Bb, X0, S0; ϵ=1e-6, T=1e3)
+
+Given a quadratic objective function F: R^n -> R, equality contraints A: R^n -> R^m,
+inequality contraints B: R^n -> R^p, initial point x0 ∈ R^n and initial active set S0 ⊆ [1,p],
+solves the optimization problem
+			min_(x)	F(x) = G'x + 1/2 x'Hx
+			s.t.	Ax = a
+					Bx ≥ b
+by using an Active Set Method.
+The current solution is optimized by computing the recursive updates
+	| x_(k+1) | = | x_k + η p |	    (x_0 = x0).
+	| γ_(k+1) |	  |  γ_(k+1)  |
+	| λ_(k+1) |	  |  λ_(k+1)  |
+with p ∈ R^n, γ_(k+1) ∈ R^m and λ_(k+1) ∈ R^(|S|) being the solutions of the Karush-Kuhn-Tucker (KKT) system
+	| ∇²_x F   A'  _B' | |   -p    | = | ∇F |  .
+	|    A     0    0  | | γ_(k+1) |   | a  |
+	|   _B     0    0  | | λ_(k+1) |   | b  |
+where _B = [Bi] for i ∈ S_k, the current active set.
+
+The outputs are X = [x_0, ..., x_T], final active set S_T, multipliers λ = [λ_0, ..., λ_T]
+and γ = [γ_0, ..., γ_T].
+"""
 function QP_solver(G, H, A_a, B_b, x0, S0; ϵ=1e-6, T=1e3, verbose=false)
-# (X,S,γ,λ) = QP_SOLVER(G, H, Aa, Bb, X0, S0; ϵ=1e-6, T=1e3) 
-#	given a quadratic objective function F: R^n -> R, equality contraints A: R^n -> R^m,
-#	inequality contraints B: R^n -> R^p, initial point x0 ∈ R^n and initial active set S0 ⊆ [1,p], 
-#	solves the optimization problem
-#				min_(x)	F(x) = G'x + 1/2 x'Hx
-#				s.t.	Ax = a
-#						Bx ≥ b
-#	by using an Active Set Method.
-#	The current solution is optimized by computing the recursive updates
-#		| x_(k+1) | = | x_k + η p |	    (x_0 = x0).
-#		| γ_(k+1) |	  |  γ_(k+1)  | 
-#		| λ_(k+1) |	  |  λ_(k+1)  | 
-#	with p ∈ R^n, γ_(k+1) ∈ R^m and λ_(k+1) ∈ R^(|S|) being the solutions of the Karush-Kuhn-Tucker (KKT) system
-#		| ∇²_x F   A'  _B' | |   -p    | = | ∇F |  .
-#		|    A     0    0  | | γ_(k+1) |   | a  |
-#		|   _B     0    0  | | λ_(k+1) |   | b  |
-#	where _B = [Bi] for i ∈ S_k, the current active set.
-#
-#	The outputs are X = [x_0, ..., x_T], final active set S_T, multipliers λ = [λ_0, ..., λ_T] 
-#	and γ = [γ_0, ..., γ_T]. 
-	
 	# Declare auxiliary variables for the optimization
 	k = 0; n = length(x0); (m,mx) = size(A_a); (p,px) = size(B_b)
 
@@ -82,12 +83,12 @@ function QP_solver(G, H, A_a, B_b, x0, S0; ϵ=1e-6, T=1e3, verbose=false)
 		terminate = false
 		if(sum(B*x_k .< b) > 0)
 			S_k = union(S[end], setdiff(findall(B*x_k .< b), S[end]))
-			
+
 			η_aux = -(_B!*X[:,end].-_b!)./(p_k'_B!')'
 			η = min(η_aux[findall(η_aux .> 0)]...)
 			x_k = X[:,end] + η*p_k
 		elseif(sum(λ_k .< 0) > 0)
-			S_k = S[end][setdiff(1:end, argmin(λ_k))]	
+			S_k = S[end][setdiff(1:end, argmin(λ_k))]
 		else
 			S_k = S[end]
 			terminate = true
@@ -106,12 +107,13 @@ function QP_solver(G, H, A_a, B_b, x0, S0; ϵ=1e-6, T=1e3, verbose=false)
 	return (X,S,γ,λ)
 end
 
-function activeContraints(B, b, S) 
-# (B,b, B!,b!) = activeContraints(B, b, S) 
-#	given linear equality contraints A: R^n -> R^m, inequality contraints
-#	B: R^n -> R^p and a set of index for active contraints, separate the
-#	function into the active contraints [B, b] and inactive contraints [B!, b!]
+"""	(B,b, B!,b!) = activeContraints(B, b, S)
 
+Given linear equality contraints A: R^n -> R^m, inequality contraints
+B: R^n -> R^p and a set of index for active contraints, separate the
+function into the active contraints [B, b] and inactive contraints [B!, b!]
+"""
+function activeContraints(B, b, S)
 	# Auxiliary variables
 	n = size(B,2)
 
@@ -160,7 +162,7 @@ else; FA = []
 end
 
 contour(xx1, xx2, Fx,
-		xlim=(min(xx1...), max(xx1...)), 
+		xlim=(min(xx1...), max(xx1...)),
     	ylim=(min(xx2...), max(xx2...)),
     	size=(16,10).*50, dpi=200, grid=false)
 
@@ -177,10 +179,10 @@ plot!(X[1,:], X[2,:], l=(1, :blue), m=(:star5, :white, 6, stroke(0)))
 
 # anim = @animate for ti ∈ 1:size(X,2)
 # 	contour(xx1, xx2, Fx,
-# 			xlim=(min(xx1...), max(xx1...)), 
+# 			xlim=(min(xx1...), max(xx1...)),
 #         	ylim=(min(xx2...), max(xx2...)),
 #         	size=(16,10).*30, dpi=200, grid=false)
-	
+
 # 	contourf!(xx1, xx2, cx, RGBA(1,0,0,0.3))
 
 # 	plot!(X[1,1:ti], X[2,1:ti], l=(1, :blue), m=(:star5, :white, 6, stroke(0)))

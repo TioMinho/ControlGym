@@ -12,49 +12,6 @@ pyplot(leg=false)
 # The linear regression model
 y(x, w, ϕ=ϕ_poly(1)) = w'ϕ(x)
 
-# The basis functions
-function ϕ_poly(M)
-	return ϕ(x) = hcat( ones(size(x,1), 1), [x.^j for j in 1:M]... )'
-end
-
-function ϕ_gauss(μ, σ)
-	return ϕ(x) = hcat( ones(size(x,1), 1), exp.(-(x.-μ).^2 ./ 2σ.^2) )'
-end
-
-function ϕ_sigm(μ, σ)
-	return ϕ(x) = hcat( ones(size(x,1), 1), 1 ./ (1 .+ exp.(-(x-μ)./σ)) )'
-end
-
-# Analytical solution for w (using Maximum Likelihood Estimation)
-function train(X, t, ϕ=ϕ_poly(1))
-	# Creates the Design Matrix
-	Φ = ϕ(X)'
-
-	# Returns the Maximum Likelihood Estimator of w
-	return pinv(Φ)*t
-end
-
-function train_bayes(X, t, ϕ=ϕ_poly(1), m0=nothing, S0=nothing)
-	# Initializes w0 ~ N(0,1) if they are not provided
-	if(m0 == nothing || S0 == nothing)
-		m0 = zeros(size(ϕ(X[1,:]), 1))
-		S0 = ones(size(ϕ(X[1,:]), 1))
-	end
-
-	# Adds the prior to the Distribution iterations
-	w = [MvNormal(m0, S0)]
-	β = 1 	# Noise parameter (known)
-
-	# Uptade the mean and variance of the weight distribution
-	for n = 1:size(X,1)
-		Sn_inv = inv(w[n].Σ) + β*ϕ(X[n,:])*ϕ(X[n,:])'; Sn = (inv(Sn_inv))
-		mn = Sn*(inv(w[n].Σ)*w[n].μ + β*ϕ(X[n,:])*t[n,:])
-
-		w = [w; MvNormal(mn, Symmetric(Sn))]
-	end
-
-	return w
-end
 # == ==
 
 # == Script ==
@@ -93,7 +50,7 @@ anim = @animate for i = 1:length(w)
 	plot!(xl, y(xl, μn, ϕ)'+σn, l=0,
 			f=(y(xl, μn, ϕ)'-σn, :white, 0.15))
 
-	# Plot the mean line 
+	# Plot the mean line
 	plot!(xl, y(xl, μn, ϕ)', l=(1.5, :pink), ylims=(-1, 1))
 end
 gif(anim, "res/bayesreg_01.gif", fps=5)

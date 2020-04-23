@@ -10,25 +10,26 @@ import Base: *
 # ===================
 
 # ==== Functions ====
+""" (Xₑ,μ,Σ) = EKF(SYS,Y,U,T,X₀,Q,R)
+
+Solves a state estimation problem using the Extended Kalman Filter (EKF).
+Consider the stochastic nonlinear discrete-time state-space system
+		xₖ₊₁ = f(xₖ,uₖ) + vₖ,		vₖ ~ 𝓝(0,Q)
+		yₖ   = g(xₖ)    + zₖ,		zₖ ~ 𝓝(0,R)
+with prior distribution X₀ ~ 𝓝(μ₀,Σ₀).
+The EKF approximates the filtering distribution xₖ ~ p(xₖ|y₀,⋯,yₖ) ≈ 𝓝(μₖ,Σₖ) by first
+computing, for each time-step, a linearization of the functions f:ℝⁿ×ℝᵖ→ℝⁿ and g:ℝⁿ→ℝᵐ,
+		xₖ₊₁ = Aₖx + Bₖu + vₖ
+		yₖ   = Cₖx       + zₖ
+with Aₖ = ∂f/∂x|₍ₓₖ,ᵤₖ₎, Bₖ = ∂f/∂u|₍ₓₖ,ᵤₖ₎ and Cₖ = ∂g/∂x|₍ₓₖ₎.
+The approximation is then computed using using a Bayesian approach:
+	1) Compute the predictive distribution
+		Xₚ ~ p(xₖ|y₁,⋯,yₖ₋₁) ≈ 𝓝(μ⁻ₖ,Σ⁻ₖ) = 𝓝(Aₖxₖ₋₁+Bₖuₖ₋₁, Aₖ*Σₖ₋₁*Aₖᵀ + Q)
+	2) Use Bayes' rule to compute the filtering distribution
+		Xₚ ~ p(xₖ|y₁,⋯,yₖ)   ≈ 𝓝(μₖ,Σₖ)   = 𝓝(μ⁻ₖ+Kₖ(yₖ-Cₖμ⁻ₖ), Σ⁻ₖ+Kₖ(CₖΣ⁻ₖCₖᵀ+R)Kₖᵀ)
+	   with Kₖ = Σ⁻ₖ Cₖᵀ(CₖᵀΣ⁻ₖCₖᵀ+R)⁻¹, the optimal Kalman estimator.
+"""
 function EKF(sys, y, u, t, x₀, Q, R)
-# (Xₑ,μ,Σ) = EKF(SYS,Y,U,T,X₀,Q,R)
-#	Solves a state estimation problem using the Extended Kalman Filter (EKF).
-#	Consider the stochastic nonlinear discrete-time state-space system
-#			xₖ₊₁ = f(xₖ,uₖ) + vₖ,		vₖ ~ 𝓝(0,Q)
-#			yₖ   = g(xₖ)    + zₖ,		zₖ ~ 𝓝(0,R)
-#	with prior distribution X₀ ~ 𝓝(μ₀,Σ₀).
-#	The EKF approximates the filtering distribution xₖ ~ p(xₖ|y₀,⋯,yₖ) ≈ 𝓝(μₖ,Σₖ) by first
-#	computing, for each time-step, a linearization of the functions f:ℝⁿ×ℝᵖ→ℝⁿ and g:ℝⁿ→ℝᵐ,
-#			xₖ₊₁ = Aₖx + Bₖu + vₖ
-#			yₖ   = Cₖx       + zₖ
-#	with Aₖ = ∂f/∂x|₍ₓₖ,ᵤₖ₎, Bₖ = ∂f/∂u|₍ₓₖ,ᵤₖ₎ and Cₖ = ∂g/∂x|₍ₓₖ₎.
-#	The approximation is then computed using using a Bayesian approach:
-#		1) Compute the predictive distribution
-#			Xₚ ~ p(xₖ|y₁,⋯,yₖ₋₁) ≈ 𝓝(μ⁻ₖ,Σ⁻ₖ) = 𝓝(Aₖxₖ₋₁+Bₖuₖ₋₁, Aₖ*Σₖ₋₁*Aₖᵀ + Q)
-#		2) Use Bayes' rule to compute the filtering distribution
-#			Xₚ ~ p(xₖ|y₁,⋯,yₖ)   ≈ 𝓝(μₖ,Σₖ)   = 𝓝(μ⁻ₖ+Kₖ(yₖ-Cₖμ⁻ₖ), Σ⁻ₖ+Kₖ(CₖΣ⁻ₖCₖᵀ+R)Kₖᵀ)
-#		   with Kₖ = Σ⁻ₖ Cₖᵀ(CₖᵀΣ⁻ₖCₖᵀ+R)⁻¹, the optimal Kalman estimator.
-#
 	# Auxiliary variables
 	(f,g,A,~,C,Δt,Nₓ,Nᵧ,Nᵤ) = sys
 	t = t[1]:Δt:t[end]

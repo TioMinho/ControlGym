@@ -5,19 +5,20 @@ using ControlSystems
 # ===================
 
 # ==== Functions ====
-# (Y,T,X) = SIM(SYS,U,T,X₀;Q=nothing,R=nothing,MODE="nonlinear")
-# 	Simulates the discrete-time state-space system given by the model SYS.
-#	Given a input sequence U = [u₁,⋯,uₜ] for a time-span T = [t₀, tₜ], computes the simulation
-#		MODE == "nonlinear"			MODE =="linear"
-#		xₖ₊₁ = f(xₖ, uₖ)			xₖ₊₁ = Axₖ + Buₖ
-#		yₖ	 = g(xₖ)				yₖ	 = Cxₖ
-#	with initial state x₀ given by the arguments.
-#	If Q or R are different than "nothing", the function simulates the stochastic system
-#		MODE == "nonlinear"			MODE =="linear"
-#		xₖ₊₁ = f(xₖ, uₖ) + vₖ		xₖ₊₁ = Axₖ + Buₖ + vₖ
-#		yₖ	 = g(xₖ)	 + zₖ		yₖ	 = Cxₖ		 + zₖ
-#	with Vₖ ~ 𝓝(0,Q), Zₖ ~ 𝓝(0,R), and initial state x₀ given by the arguments.
-#
+"""	(Y,T,X) = SIM(SYS,U,T,X₀;Q=nothing,R=nothing,MODE="nonlinear")
+
+Simulates the discrete-time state-space system given by the model SYS.
+Given a input sequence U = [u₁,⋯,uₜ] for a time-span T = [t₀, tₜ], computes the simulation
+	MODE == "nonlinear"			MODE =="linear"
+	xₖ₊₁ = f(xₖ, uₖ)			xₖ₊₁ = Axₖ + Buₖ
+	yₖ	 = g(xₖ)				yₖ	 = Cxₖ
+with initial state x₀ given by the arguments.
+If Q or R are different than "nothing", the function simulates the stochastic system
+	MODE == "nonlinear"			MODE =="linear"
+	xₖ₊₁ = f(xₖ, uₖ) + vₖ		xₖ₊₁ = Axₖ + Buₖ + vₖ
+	yₖ	 = g(xₖ)	 + zₖ		yₖ	 = Cxₖ		 + zₖ
+with Vₖ ~ 𝓝(0,Q), Zₖ ~ 𝓝(0,R), and initial state x₀ given by the arguments.
+"""
 function sim(sys, u, t, x₀; Q=nothing, R=nothing, mode="nonlinear")
 	# Auxiliary variables
 	(f,g,A,B,C,Δt,Nₓ,Nᵧ,Nᵤ) = sys

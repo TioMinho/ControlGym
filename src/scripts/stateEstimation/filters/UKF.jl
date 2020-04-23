@@ -10,16 +10,18 @@ import Base: *
 # ===================
 
 # ==== Functions ====
+""" (Xₑ,μ,Σ) = UKF(SYS,Y,U,T,X₀,Q,R;α=1,κ=1,β=0)
+
+Solves a state estimation problem using the Unscented Kalman Filter (UKF).
+Consider the stochastic nonlinear discrete-time state-space system
+		xₖ₊₁ = f(xₖ,uₖ) + vₖ,		vₖ ~ 𝓝(0,Q)
+		yₖ   = g(xₖ)    + zₖ,		zₖ ~ 𝓝(0,R)
+with prior distribution x₀ ~ 𝓝(μ₀,Σ₀).
+The UKF approximates the filtering distribution xₖ ~ p(xₖ|y₀,⋯,yₖ) ≈ 𝓝(μₖ,Σₖ) by computing
+a set of sigma-points (𝓧ₖ,𝓨ₖ) and then use the unscented transformation method to estimate
+the mean and variance of this approximation.
+"""
 function UKF(sys, y, u, t, x₀, Q, R; α=1, κ=1, β=0)
-# (Xₑ,μ,Σ) = UKF(SYS,Y,U,T,X₀,Q,R;α=1,κ=1,β=0)
-#	Solves a state estimation problem using the Unscented Kalman Filter (UKF).
-#	Consider the stochastic nonlinear discrete-time state-space system
-#			xₖ₊₁ = f(xₖ,uₖ) + vₖ,		vₖ ~ 𝓝(0,Q)
-#			yₖ   = g(xₖ)    + zₖ,		zₖ ~ 𝓝(0,R)
-#	with prior distribution x₀ ~ 𝓝(μ₀,Σ₀).
-#	The UKF approximates the filtering distribution xₖ ~ p(xₖ|y₀,⋯,yₖ) ≈ 𝓝(μₖ,Σₖ) by computing
-#	a set of sigma-points (𝓧ₖ,𝓨ₖ) and then use the unscented transformation method to estimate
-#	the mean and variance of this approximation.
 #
 	# Auxiliary variables
 	(f,g,~,~,~,Δt,Nₓ,Nᵧ,Nᵤ) = sys

@@ -8,28 +8,31 @@ pyplot(leg=false)
 # ===================
 
 # ==== Functions ====
+"""	𝓥 = DRAW_BASE(θ)
+Defines a set of vertices 𝓥 = {(x,y) | ∀θ ∈ [0,π] & x = sin(θ) & x = cos(θ)} to
+draw a circle representing the base of the robot.
+"""
 function draw_base(θ)
-# 𝓥 = DRAW_BASE(θ)
-#	Defines a set of vertices 𝓥 = {(x,y) | ∀θ ∈ [0,π] & x = sin(θ) & x = cos(θ)} to
-#	draw a circle representing the base of the robot.
 	x = -(θ:0.1:(2π+θ)).+π/2
 	vert = vcat([(0., 0.)], [(xi,yi) for (xi,yi) in zip(sin.(x), cos.(x))])
 	return Shape(vert)
 end
 
+"""	𝓥 = DRAW_VELOCITY(v,θ)
+Defines a set of vertices 𝓥 = {(x,y)} to draw an arrow pointing from the front of the base.
+The length of the arrow is given by the magnitude of the velocity v.
+"""
 function draw_velocity(v,θ)
-# 𝓥 = DRAW_VELOCITY(v,θ)
-#	Defines a set of vertices 𝓥 = {(x,y)} to draw an arrow pointing from the front of the base.
-#	The length of the arrow is given by the magnitude of the velocity v.
 	θ -= π/2;
 	vert = vcat([0.4/(1+v).*(sin(-θ),cos(-θ)), (sin(-θ),cos(-θ)), 0.85.*(sin(-θ+0.1),cos(-θ+0.1)), (sin(-θ),cos(-θ)), 0.85.*(sin(-θ-0.1),cos(-θ-0.1)), (sin(-θ),cos(-θ))]...)
 	return Shape(vert)
 end
 
+"""	𝓥 = DRAW_ROTATION(ω,θ)
+Defines a set of vertices 𝓥 = {(x,y)} to draw a curvy arrow around the base of the robot.
+The length and direction of the arrow is given by the magnitude of the angular velocity ω.
+"""
 function draw_rotation(ω, θ)
-# 𝓥 = DRAW_ROTATION(ω,θ)
-#	Defines a set of vertices 𝓥 = {(x,y)} to draw a curvy arrow around the base of the robot.
-#	The length and direction of the arrow is given by the magnitude of the angular velocity ω.
 	θ += π/2;
 	if ω > 0; x = -((θ+0.5π-0.25ω):0.2:(θ+0.5π+0.25ω))
 			  vert = vcat([(sin(x[end]+π/8), cos(x[end]+π/8)), 0.85.*(sin(x[end]), cos(x[end])), 0.7.*(sin(x[end]+π/8), cos(x[end]+π/8))]...)
@@ -43,13 +46,13 @@ function draw_rotation(ω, θ)
 	return Shape(vert)
 end
 
+"""	P = PLOT_TRAJECTORY(T,X,Y,U;Xₑ=nothing,anim=false,name="car")
+Plot the time (T=[t₀,tₜ]) trajectory of a system described by a sequence of state-vectors X=[x₁,⋯,xₜ],
+a sequence of output-vectors Y=[y₁,⋯,yₜ] and a sequence of input-vectors U=[u₁,⋯,uₜ].
+If Xₑ ≠ nothing, such that Xₑ=[xₑ₁,⋯,xₑₜ] is the sequence of estimated state-vectors, the function plots
+the estimated state trajectory in a solid line and the real state trajectory in a near-transparent dashed-line.
+"""
 function plot_trajectory(t, x, y, u; xₑ=nothing, anim=false, name="car")
-# P = PLOT_TRAJECTORY(T,X,Y,U;Xₑ=nothing,anim=false,name="car")
-#	Plot the time (T=[t₀,tₜ]) trajectory of a system described by a sequence of state-vectors X=[x₁,⋯,xₜ],
-#	a sequence of output-vectors Y=[y₁,⋯,yₜ] and a sequence of input-vectors U=[u₁,⋯,uₜ].
-#	If Xₑ ≠ nothing, such that Xₑ=[xₑ₁,⋯,xₑₜ] is the sequence of estimated state-vectors, the function plots
-#	the estimated state trajectory in a solid line and the real state trajectory in a near-transparent dashed-line.
-#
 	# Initial checks
 	if anim == false; t₀ = length(t)
 	else; 			  t₀ = 1

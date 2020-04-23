@@ -10,21 +10,22 @@ import Base: *
 # ===================
 
 # ==== Functions ====
+"""	(Xₑ,μ,Σ) = KF(SYS,Y,U,T,X₀,Q,R)
+
+Solves a state estimation problem using the Kalman Filter (KF).
+Consider the stochastic linear discrete-time state-space system
+		xₖ₊₁ = Axₖ + Buₖ + vₖ,		vₖ ~ 𝓝(0,Q)
+		yₖ   = Cxₖ       + zₖ,		zₖ ~ 𝓝(0,R)
+with prior distribution x₀ ~ 𝓝(μ₀,Σ₀).
+The KF exactly solves the filtering distribution xₖ ~ p(xₖ|y₀,⋯,yₖ) = 𝓝(μₖ,Σₖ)
+using a Bayesian approach:
+	1) Compute the predictive distribution
+		Xₚ ~ p(xₖ|y₁,⋯,yₖ₋₁) = 𝓝(μ⁻ₖ,Σ⁻ₖ) = 𝓝(Axₖ₋₁+Buₖ₋₁, A*Σₖ₋₁*Aᵀ + Q)
+	2) Use Bayes' rule to compute the filtering distribution
+		Xₚ ~ p(xₖ|y₁,⋯,yₖ)   = 𝓝(μₖ,Σₖ)   = 𝓝(μ⁻ₖ+Kₖ(yₖ-Cμ⁻ₖ), Σ⁻ₖ+Kₖ(CΣ⁻ₖCᵀ+R)Kₖᵀ)
+	   with Kₖ = Σ⁻ₖ Cᵀ(CᵀΣ⁻ₖCᵀ+R)⁻¹, the optimal Kalman estimator.
+"""
 function KF(sys, y, u, t, x₀, Q, R)
-# (Xₑ,μ,Σ) = KF(SYS,Y,U,T,X₀,Q,R)
-#	Solves a state estimation problem using the Kalman Filter (KF).
-#	Consider the stochastic linear discrete-time state-space system
-#			xₖ₊₁ = Axₖ + Buₖ + vₖ,		vₖ ~ 𝓝(0,Q)
-#			yₖ   = Cxₖ       + zₖ,		zₖ ~ 𝓝(0,R)
-#	with prior distribution x₀ ~ 𝓝(μ₀,Σ₀).
-#	The KF exactly solves the filtering distribution xₖ ~ p(xₖ|y₀,⋯,yₖ) = 𝓝(μₖ,Σₖ)
-#	using a Bayesian approach:
-#		1) Compute the predictive distribution
-#			Xₚ ~ p(xₖ|y₁,⋯,yₖ₋₁) = 𝓝(μ⁻ₖ,Σ⁻ₖ) = 𝓝(Axₖ₋₁+Buₖ₋₁, A*Σₖ₋₁*Aᵀ + Q)
-#		2) Use Bayes' rule to compute the filtering distribution
-#			Xₚ ~ p(xₖ|y₁,⋯,yₖ)   = 𝓝(μₖ,Σₖ)   = 𝓝(μ⁻ₖ+Kₖ(yₖ-Cμ⁻ₖ), Σ⁻ₖ+Kₖ(CΣ⁻ₖCᵀ+R)Kₖᵀ)
-#		   with Kₖ = Σ⁻ₖ Cᵀ(CᵀΣ⁻ₖCᵀ+R)⁻¹, the optimal Kalman estimator.
-#
 	# Auxiliary variables
 	(~,~,A,B,C,Δt,Nₓ,Nᵧ,Nᵤ) = sys
 	t = t[1]:Δt:t[end]
