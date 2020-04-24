@@ -1,5 +1,6 @@
 # ==== Libraries ====
 using LinearAlgebra, Distributions, StatsBase, Random, PDMats
+using Printf
 
 # ===================
 
@@ -17,7 +18,8 @@ The OLS problem consists of minimizing the error function
 arising from the maximum likelihood approach for the regression problem.
 """
 function OLS(X, t, ϕ=ϕ_poly(1))
-    return pinv(ϕ(X))*t     # Φ = ϕ(X) -> The Design Matrix
+	Φ = ϕ(X)'			# Φ = ϕ(X)' -> The Design Matrix
+    return pinv(Φ)*t
 end
 
 """	w = ROLS(X, t, λ, ϕ=ϕ_poly(1))
@@ -33,7 +35,7 @@ The OLS problem consists of minimizing the L2 regularized error function
 arising from the maximum likelihood approach for the regression problem.
 """
 function ROLS(X, t, λ, ϕ=ϕ_poly(1))
-	Φ = ϕ(X)						# Stores the Design Matrix
+	Φ = ϕ(X)'						# Stores the Design Matrix
     return inv(λI + Φ'Φ)*Φ't
 end
 

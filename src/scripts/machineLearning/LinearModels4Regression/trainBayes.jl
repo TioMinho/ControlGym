@@ -1,6 +1,12 @@
 # ==== Libraries ====
 using LinearAlgebra, Distributions, StatsBase, Random, PDMats
 
+import Base: *
+*(v::Any, Σ::PDMats.PDiagMat{Float64,Array{Float64,1}}) = v*(Σ*I(size(Σ,1)))
+*(v::Array{Float64,2}, Σ::PDMats.PDiagMat{Float64,Array{Float64,1}}) = v*(Σ*I(size(Σ,1)))
+*(v::Any, Σ::PDMat{Float64,Array{Float64,2}}) = v*(Σ*I(size(Σ,1)))
+*(v::Array{Float64,2}, Σ::PDMat{Float64,Array{Float64,2}}) = v*(Σ*I(size(Σ,1)))
+
 # ===================
 
 # ==== Functions ====
@@ -13,30 +19,34 @@ and then updating the distribution using the Bayes' rule
 	p(w⁽ᵏ⁾|t) = p(t|w⁽ᵏ⁻¹⁾)p(w⁽ᵏ⁻¹⁾) / p(t)
 			  = 𝓝(mₖ, Sₖ)
 with
-	mₖ₊₁ = { βS₁Φ't				if k = 0		 Sₖ₊₁ = { αI+βΦ'Φ			if k = 0
-	 	   { Sₖ₊₁(Sₖ⁻¹mₖ+βΦ't) 	otherwise				{ Sₖ⁻¹+βΦ'Φ 		otherwise
+	mₖ₊₁ = { βS₁Φ't				if k = 0		 (Sₖ₊₁)⁻¹ = { αI+βΦ'Φ		if k = 0
+	 	   { Sₖ₊₁(Sₖ⁻¹mₖ+βΦ't) 	otherwise					{ Sₖ⁻¹+βΦ'Φ 	otherwise
 
 """
-function BayesRegression(X, t, ϕ=ϕ_poly(1); m0=nothing, S0=nothing)
-	# Initializes w0 ~ N(0,1) if they are not provided
-	if(m0 == nothing || S0 == nothing)
-		m0 = zeros(size(ϕ(X[1,:]), 1))
-		S0 = ones(size(ϕ(X[1,:]), 1))
+function BayesRegression(X, t, ϕ=ϕ_poly(1); m₀=nothing, S₀=nothing, α=1, β=1)
+	# Initializes w0 ~ N(0,α⁻¹I) if they are not provided
+	if(m₀ == nothing || S₀ == nothing)
+		m₀ = zeros(size(ϕ(X[1,:]), 1))
+		S₀ = (1/α)I(size(ϕ(X[1,:]), 1))
 	end
 
 	# Adds the prior to the Distribution iterations
-	w = [MvNormal(m0, S0)]
-	β = 1 	# Noise parameter (known)
+	W = [MvNormal(m₀, S₀)]
 
-	# Uptade the mean and variance of the weight distribution
-	for n = 1:size(X,1)
-		Sn_inv = inv(w[n].Σ) + β*ϕ(X[n,:])*ϕ(X[n,:])'; Sn = (inv(Sn_inv))
-		mn = Sn*(inv(w[n].Σ)*w[n].μ + β*ϕ(X[n,:])*t[n,:])
+	# == Bayesian Regression Updates ==
+	for k = 1:size(X,1)
+		Φ = ϕ(X[k,:])' # Computes the Design Matrix
 
-		w = [w; MvNormal(mn, Symmetric(Sn))]
+		# Updates the Variance and Mean of distribution w⁽ᵏ⁾ ~ 𝓝(mₖ, Sₖ)
+		Sₖ⁻¹ = inv(W[k].Σ) + β*Φ'Φ; Sₖ = inv(Sₖ⁻¹)
+		mₖ = Sₖ*(inv(W[k].Σ)*W[k].μ + β*Φ't[k,:])
+
+		# Adds the current update to the list of distributions
+		W = [W; MvNormal(mₖ, Symmetric(Sₖ))]
 	end
+	# ==
 
-	return w
+	return W
 end
 
 # ===================
