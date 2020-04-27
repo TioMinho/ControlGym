@@ -74,8 +74,8 @@ function plot_classification(𝓓, w, ϕ; method="OLS")
 
 	method = lowercase(method)
 
-	# Plots the datapoints
-	scatter(x₁, x₂, lab=""); x₁_lim = xlims(); x₂_lim = ylims();	# To correct possible panning
+	# To correct possible panning
+	scatter(x₁, x₂, lab=""); x₁_lim = xlims(); x₂_lim = ylims();
 
 	# Plots the regression model
 	(xx₁ₑ, xx₂ₑ) = meshgrid(range(x₁_lim..., length=500), range(x₂_lim..., length=500))
