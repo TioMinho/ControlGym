@@ -1,13 +1,5 @@
 # ==== Libraries ====
-using LinearAlgebra, StatsBase, Random, Plots, SparseArrays
-using Printf
-
-# Configurations
-theme(:default)
-pyplot(leg=false, grid=false)
-
-# Aliases
-meshgrid(X,Y) = (first.(collect(Iterators.product(X, Y))), last.(collect(Iterators.product(X, Y))))
+using LinearAlgebra, StatsBase, Random, SparseArrays
 
 # ===================
 
@@ -128,67 +120,5 @@ function activeContraints(B, b, S)
 
 	return (_B,_b, _B!, _b!)
 end
-
-# ===================
-
-# ==== Variables ====
-F(x)   = x'x
-∇F  = 2*[1; 1]
-∇∇F = 2I(2)
-
-A = []'; a = []'
-B = [1 1.75; -1 -1/6]; b = [-1; -4]
-
-x0 = [-1; 0]
-
-# ===================
-
-# ==== Script ====
-(X,S,γ,λ) = QP_solver(∇F, ∇∇F, [A a], [B b], x0, [2], verbose=true)
-
-# 2. Plot the optimization steps
-# Generates the error surface
-(xx1, xx2) = meshgrid(-3:0.1:5, -3:0.1:5)
-xx = [[x1,x2] for (x1,x2) in zip(xx1[:], xx2[:])]
-
-Fx = reshape(F.(xx), size(xx1))
-if(size(B,2)>0)
-	F0 = ([reshape(B[i,:]'*[xx1[:] xx2[:]]' .- b[i], size(xx1)) for i in 1:size(B,1)])
-else; F0 = []
-end
-if(size(A,2)>0)
-	FA = ([reshape(A[i,:]'*[xx1[:] xx2[:]]' .- a[i], size(xx1)) for i in 1:size(A,1)])
-else; FA = []
-end
-
-contour(xx1, xx2, Fx,
-		xlim=(min(xx1...), max(xx1...)),
-    	ylim=(min(xx2...), max(xx2...)),
-    	size=(16,10).*25, dpi=200, grid=false)
-
-for i in 1:length(F0)
-	contourf!(xx1, xx2, F0[i], levels=[0 1], c=[RGBA(0,0,0,0.4), RGBA(0,0,0,0)])
-	contour!(xx1, xx2, F0[i], levels=0, c=RGBA(0.4,0.4,0.4,1))
-end
-
-for i in 1:length(FA)
-	contour!(xx1, xx2, FA[i], levels=0, c=RGBA(0.2,0.8,0.2,1))
-end
-
-plot!([0], [0], m=(:star5, :black, 10, stroke(0)),xaxis=false, yaxis=false)
-
-
-anim = @animate for ti ∈ 1:size(X,2)
-	contour(xx1, xx2, Fx,
-			xlim=(min(xx1...), max(xx1...)),
-        	ylim=(min(xx2...), max(xx2...)),
-        	size=(16,10).*30, dpi=200, grid=false)
-
-	contourf!(xx1, xx2, cx, RGBA(1,0,0,0.3))
-
-	plot!(X[1,1:ti], X[2,1:ti], l=(1, :blue), m=(:star5, :white, 6, stroke(0)))
-	savefig("res/tmp/tmp_newtoneq_$(ti).png")
-end
-gif(anim, "res/newtoneq.gif", fps=10)
 
 # ===================

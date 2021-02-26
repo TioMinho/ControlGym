@@ -2,7 +2,7 @@
 using Plots
 
 # Configurations
-theme(:dark)
+theme(:default)
 pyplot(leg=false)
 
 # ===================
@@ -61,9 +61,9 @@ function plot_trajectory(t, x, y, u; xₑ=nothing, anim=false, name="car")
 	# Plot the robot
 	vid = @animate for tᵢ ∈ t₀:length(t)
 		scatter(y[1,1:tᵢ], y[2,1:tᵢ], m=(:star5, 3, stroke(0)), markeralpha=range(0,0.7,length=tᵢ+1),
-	               xlim=(min(y[1,:]...)-2, max(y[1,:]...)+2),
-	               ylim=(min(y[2,:]...)-2, max(y[2,:]...)+2),
-	               ticks=nothing, size=(16,9).*30, dpi=400)
+	               xlim=(min(y[1,:]...)-0.5, max(y[1,:]...)+0.5),
+	               ylim=(min(y[2,:]...)-1.0, max(y[2,:]...)+1.0),
+	               axis=nothing, size=(16,12).*20, dpi=300)
 
 		if tᵢ > 1
 			if xₑ == nothing
@@ -74,9 +74,9 @@ function plot_trajectory(t, x, y, u; xₑ=nothing, anim=false, name="car")
 			end
 		end
 
-		scatter!([xₑ[1,tᵢ]], [xₑ[2,tᵢ]], alpha=0.25, marker=(arrow(u[1,tᵢ], xₑ[3,tᵢ]), 20*u[1,tᵢ], stroke(1, 0.1, :white)))
-		scatter!([xₑ[1,tᵢ]], [xₑ[2,tᵢ]], alpha=0.80, marker=(circle(xₑ[3,tᵢ]), 15, :white))
-		scatter!([xₑ[1,tᵢ]], [xₑ[2,tᵢ]], alpha=0.25, marker=(arrowRotation(u[2,tᵢ], xₑ[3,tᵢ]), 25, stroke(1, 0.1, :white)))
+		scatter!([xₑ[1,tᵢ]], [xₑ[2,tᵢ]], alpha=0.75, marker=(draw_velocity(u[1,tᵢ], xₑ[3,tᵢ]), 20*u[1,tᵢ], stroke(1, 0.8, :black)))
+		scatter!([xₑ[1,tᵢ]], [xₑ[2,tᵢ]], alpha=0.85, marker=(draw_base(xₑ[3,tᵢ]), 15, :black))
+		scatter!([xₑ[1,tᵢ]], [xₑ[2,tᵢ]], alpha=0.75, marker=(draw_rotation(u[2,tᵢ], xₑ[3,tᵢ]), 25, stroke(1, 0.8, :black)))
 		savefig("res/tmp/tmp_$(name)$(tᵢ).png")
 	end
 

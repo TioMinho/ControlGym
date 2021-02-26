@@ -6,10 +6,10 @@ theme(:dark)
 pyplot(leg=false)
 
 # Global Variables
-colors = reshape(Plots.palette(:dark), (1,19));
-colorsBG = reshape([RGBA(c.r,c.g,c.b,0.35) for c in colors], (1,19));
-markers = reshape([x for x in Plots.supported_markers() if x ∉ [:none :auto :star5]],
-					(1,22))
+# colors = reshape(Plots.palette(:Dark2_8), (1,19));
+# colorsBG = reshape([RGBA(c.r,c.g,c.b,0.35) for c in colors], (1,19));
+# markers = reshape([x for x in Plots.supported_markers() if x ∉ [:none :auto :star5]],
+# 					(1,22))
 
 # Aliases
 meshgrid(X,Y) = (first.(collect(Iterators.product(X, Y))), last.(collect(Iterators.product(X, Y))))
@@ -38,7 +38,7 @@ function plot_regression(𝓓, w, ϕ; method="MLE")
 	method = lowercase(method)
 
 	# Plots the datapoints
-	p = scatter(x, t, m=(4, 0.5, stroke(0)), mar, lab="Data")
+	p = scatter(x, t, m=(4, 0.5, stroke(0)), lab="Data")
 
 	# Plots the regression model
 	xₑ = range(1.1*min(x...), 1.1*max(x...), length=1000)

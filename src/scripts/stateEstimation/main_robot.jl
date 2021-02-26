@@ -52,4 +52,4 @@ X₀ = MvNormal(x₀, 0.001I(3))
 (Xₑ, μₑ, Σₑ) = UKF(sys, y, u, t, X₀, Q, R)
 
 # Plot the results
-plot_trajectory(t, x, y, u, xₑ=μₑ, anim=false, name="car")
+plot_trajectory(t, x, y, u, xₑ=μₑ, anim=true, name="car")

@@ -9,27 +9,23 @@ for folder in folders;	for file in readdir(folder)
 end; end
 
 # Configurations
-theme(:dark)
+theme(:dark);
 pyplot(leg=false)
 
 # =====
 
 # == Variables ==
 # The Data and auxiliary variables
-data   = CSV.read((@__DIR__)*"/data/noisySin.csv")
+data   = CSV.read((@__DIR__)*"/data/noisySin.csv", DataFrame)
 (x, t) = [data.x, data.t]
 
 Nₓ = size(x, 2); Nₜ = size(t, 2); M = size(x, 1)
-
-# The choosen basis function
-ϕ = ϕ_poly(3)
-
 # =====
 
 # == Script ==
 # 1. Learns the weigths for the linear regression model
-wₒ = OLS(x, t, ϕ)						# MLE Approach
-W  = BayesRegression(data.x, data.t, ϕ)	# Bayesian approach
+wₒ = OLS(x, t, ϕ_poly(3))							# MLE Approach
+W  = BayesRegression(data.x, data.t, ϕ=ϕ_poly(3))	# Bayesian approach
 
 # 2. Plots the regression results
-plot_regression(data, W, ϕ, method="bayes")
+plot_regression(data, W, ϕ_poly(3), method="bayes")
