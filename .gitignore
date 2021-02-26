@@ -175,5 +175,8 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-# Temporary folders
+# Temporary folders and personal drafts
 tmp/
+doc/draft/
+res/play/
+src/scripts/
